@@ -5,7 +5,7 @@ Resources:
     SNSTopic:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: "awsdms-gdm-monitoring-1"
+        TopicName: "awsdms-gdm-monitoring-1123"
         DisplayName: "dms-mon-1"
     Subscription:
       Type: AWS::SNS::Subscription
