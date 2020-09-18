@@ -1,0 +1,26 @@
+# Create SNS Topic and Subscription for DMS Replication Insatcne
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Cloud Formation: GDM SNS-Topic and Subscription and  Event Subscription for DMS Replication Insatcne'
+Resources:
+    SNSTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: "awsdms-gdm-monitoring-1"
+        DisplayName: "dms-mon-1"
+    Subscription:
+      Type: AWS::SNS::Subscription
+      DependsOn:
+      - SNSTopic
+      Properties:
+        Endpoint: eip_cloud_support@lists.lilly.com
+        Protocol: email
+        TopicArn: !Ref 'SNSTopic'
+    EventSubscription:
+        Type: AWS::DMS::EventSubscription
+        DependsOn:
+        - Subscription
+        Properties:
+          Enabled: true
+          SnsTopicArn: !Ref 'SNSTopic'
+          SourceType: replication-instance
+          SubscriptionName: 'awsdms-gdm-event-repins-1'
