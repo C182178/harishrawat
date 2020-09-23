@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Security Group to allow Domino access to RDS instance
+Resources:
+  rSecurityGroupEIPTeam:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Security Group to allow Domino access to RDS instance
+      GroupName: Harish-Rawat
+      VpcId: vpc-0cb2fb5adc58748bf
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          Description: "Allow inbound traffic from the prd Domino instance"
+          FromPort: '5432'
+          ToPort: '5432'
+          CidrIp: 40.0.0.2/32
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          Description: "Allow outbound traffic from the prd Domino instance"
+          FromPort: '1024'
+          ToPort: '65535'
+          CidrIp: 40.0.0.21/32
