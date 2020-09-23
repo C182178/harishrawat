@@ -13,6 +13,11 @@ Resources:
           FromPort: '5432'
           ToPort: '5432'
           CidrIp: 40.0.0.2/32
+        - IpProtocol: tcp
+          Description: "Allow inbound traffic from the prd Domino instance-harish"
+          FromPort: '5432'
+          ToPort: '5000'
+          CidrIp: 40.100.100.2/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           Description: "Allow outbound traffic from the prd Domino instance"
