@@ -1,0 +1,472 @@
+Description: This stacks deploys Lilly Standard S3 Bucket with bucket access role and policy. 
+
+Parameters:
+  p1S3Bucket:
+    Description: S3 Bucket name.
+    Type: String
+    Default: ''
+  p2Environment:
+     Description: Environment for the bucket
+     Type: String
+     AllowedValues:
+       - 'Dev'
+       - 'Qa'
+       - 'Prod'
+  p3ProjectName:
+     Description: Name for project
+     Type: String
+     Default: ''
+  p4ProjectCode:
+    Description: Code for project
+    Type: String
+    Default: ''
+  p5CostCenter:
+    Description: Cost Center for the bucket
+    Type: String
+    Default: ''
+  p6CostCenterApprover:
+     Description: Cost Center approver for the bucket
+     Type: String
+     Default: ''
+  p7SystemOwner:
+     Description: System Owner
+     Type: String
+     Default: ''
+  p8SystemCustodian:
+    Description: System Custodian
+    Type: String
+    Default: ''
+  p9PrimaryItContact:
+    Description: Primary IT Contact
+    Type: String
+    Default: ''
+  p91Level1BusinessArea:
+     Description: Level1 Business Area
+     Type: String
+     Default: ''
+  p92DataClassification:
+     Description: Data Classification
+     Type: String
+     Default: 'Green'
+     AllowedValues:
+       - 'Red'
+       - 'Orange'
+       - 'Yellow'
+       - 'Green'
+  p93Hipaa:
+    Description: Hipaa Yes or No
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+  p94SnowRequestId:
+     Description: Service Now reference
+     Type: String
+     Default: ''
+  p95ApplicationCi:
+     Description: Application Ci
+     Type: String
+     Default: ''
+  pz0DoYouNeedIAMUser:
+    Description: Please confirm do you IAM Users and InfoSec approvals are in place.
+    Type: String
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+  pz1IamUserName:
+    Type: String
+    Description: OPTIONAL. Insert Value only when pz0DoYouNeedIAMUser parameter is Yes.
+    Default: ''
+  pz2USerIDfromCloudTrail:
+    Description: OPTIONAL. Insert Value only when pz0DoYouNeedIAMUser parameter is Yes.
+    Type: String
+    Default: "*:*"
+  p0FimGroupName:
+    Type: String
+    Description: FIM Group Name that used for Bucket Console Access role
+    Default: ''
+  p0IAMRoleExitance:
+    Type: String
+    Description: Does the IAM role already exist ?
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+  px1DoYouNeedClientIDMethod:
+    Description: Please confirm do you need ClientID methos to access the bucket.
+    Type: String
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+  pxClientID:
+    Type: String
+    Description: OPTIONAL. Insert Value only when px1DoYouNeedClientIDMethod parameter is Yes.
+    Default: ''
+  pyDoYouNeedServiceAcocuntMethod:
+    Description: Please confirm do you need Service Account method is required using Lilly AD to access the bucket.
+    Type: String
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+  pyDoYouNeedS3AccessLogs:
+    Description: Please confirm do you need Service access logs to the bucket.
+    Type: String
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+Conditions:
+  DoYouNeedIAM: !Equals [!Ref pz0DoYouNeedIAMUser , 'Yes']
+  DoYouNeedClientID: !Equals [!Ref px1DoYouNeedClientIDMethod , 'Yes']
+  DoYouNeedServiceAccount: !Equals [!Ref pyDoYouNeedServiceAcocuntMethod , 'Yes']
+  DoYouNeedS3AccessLogs: !Equals [!Ref pyDoYouNeedS3AccessLogs , 'Yes']
+  DataisRedCci: !Equals [!Ref p92DataClassification , 'Red']
+  DataisNotRedCci: !Not [!Equals [!Ref p92DataClassification , 'Red']]
+  DoIAMRoleExist: !Equals [!Ref p0IAMRoleExitance , 'No']
+Resources:
+  rBucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref p1S3Bucket
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms                            
+      LifecycleConfiguration:
+        Rules:
+        - Id: Delete Old Versions
+          Status: Enabled
+          Prefix: ''
+          NoncurrentVersionExpirationInDays: '35'
+      Tags:
+        - Key: Environment
+          Value: !Ref p2Environment
+        - Key: ProjectName
+          Value: !Ref p3ProjectName
+        - Key: ProjectCode
+          Value: !Ref p4ProjectCode
+        - Key: CostCenter
+          Value: !Ref p5CostCenter
+        - Key: CostCenterApprover
+          Value: !Ref p6CostCenterApprover
+        - Key: SystemOwner
+          Value: !Ref p7SystemOwner
+        - Key: SystemCustodian
+          Value: !Ref p8SystemCustodian
+        - Key: PrimaryItContact
+          Value: !Ref p9PrimaryItContact
+        - Key: Level1BusinessArea
+          Value: !Ref p91Level1BusinessArea
+        - Key: DataClassification
+          Value: !Ref p92DataClassification
+        - Key: Hipaa
+          Value: !Ref p93Hipaa
+        - Key: SnowRequestId
+          Value: !Ref p94SnowRequestId
+        - Key: ApplicationCi
+          Value: !Ref p95ApplicationCi
+
+  rBucketPolicy: 
+    Type: "AWS::S3::BucketPolicy"
+    Condition: DataisNotRedCci
+    Properties: 
+      Bucket: 
+        !Ref rBucket
+      PolicyDocument: 
+        Statement: 
+          - Sid: SSL Transit
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub "arn:aws:s3:::${p1S3Bucket}/*"
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'False'
+  rBucketAcccessRole:
+    Type: AWS::IAM::Role
+    Condition: DoIAMRoleExist
+    Properties:
+      RoleName: 
+        Ref: "p0FimGroupName"
+      Tags:
+        - Key: Restricted
+          Value: 'True'
+      PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/LZ-IAM-Boundary'  
+      MaxSessionDuration: 36000
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated:
+                - !Sub arn:aws:iam::${AWS::AccountId}:saml-provider/LillyUser
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+               "SAML:aud": "https://signin.aws.amazon.com/saml"
+
+  rBucketAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: ""
+      ManagedPolicyName: 
+        Ref: p1S3Bucket
+      Path: "/"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            - 
+              Action:
+                - 'cloudwatch:GetMetricStatistics'
+                - 'cloudwatch:ListMetrics'
+              Effect: Allow
+              Resource: '*'
+            - 
+              Action:
+                - 'kms:ListAliases'
+              Effect: Allow
+              Resource: '*'
+            - 
+              Action:
+                - 's3:ListAllMyBuckets'
+              Effect: Allow
+              Resource: 'arn:aws:s3:::*'
+            -
+              Action:
+                - 's3:GetBucketLocation'
+                - 's3:GetBucketVersioning'
+                - 's3:ListBucket'
+                - 's3:ListBucketVersions'
+                - 's3:GetMetricsConfiguration'
+              Effect: Allow
+              Resource: 
+                Fn::Join:
+                  - ""
+                  -
+                    - "arn:aws:s3:::"
+                    -
+                      Ref: "p1S3Bucket"
+                    - ""
+            - 
+              Action:
+                - 's3:DeleteObject'
+                - 's3:DeleteObjectVersion'
+                - 's3:GetObject'
+                - 's3:GetObjectAcl'
+                - 's3:GetObjectVersion'
+                - 's3:GetObjectVersionAcl'
+                - 's3:PutObject'
+                - 's3:PutObjectTagging'
+                - 's3:PutObjectVersionTagging'
+                - 's3:RestoreObject'
+              Effect: Allow
+              Resource: 
+                Fn::Join:
+                  - ""
+                  -
+                    - "arn:aws:s3:::"
+                    -
+                      Ref: "p1S3Bucket"
+                    - "/*"
+      Roles:
+        - Fn::If: [ DoIAMRoleExist, Ref: rBucketAcccessRole, Ref: p0FimGroupName ]
+        
+  rIamUser:
+    Type: "AWS::IAM::User"
+    Condition: DoYouNeedIAM
+    Properties:
+      UserName: 
+        Ref: "pz1IamUserName"
+      ManagedPolicyArns:
+        - Fn::Join: [ "", [ "arn:aws:iam::", Ref: "AWS::AccountId", ":policy/", Ref: "p1S3Bucket" ] ]
+  rKeyGenerationAdminIAMPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Condition: DoYouNeedIAM
+    Properties: 
+        PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+                - 
+                 Sid: Stmt01
+                 Action:
+                   - 'iam:ListUsers'
+                 Effect: Allow
+                 Resource: '*'
+                - 
+                 Sid: Stmt02
+                 Action:
+                   - 'iam:GetUser'
+                 Effect: Allow
+                 Resource:
+                   Fn::Join: ["", [ "arn:aws:iam::", Ref: "AWS::AccountId", ":user/", Ref: "pz1IamUserName" ] ]
+                - 
+                 Sid: Stmt03
+                 Action:
+                   - 'iam:CreateAccessKey'
+                   - 'iam:DeleteAccessKey'
+                   - 'iam:GetAccessKeyLastUsed'
+                   - 'iam:ListAccessKeys'
+                   - 'iam:UpdateAccessKey'
+                 Effect: Allow
+                 Resource: 
+                    Fn::Join: ["", [ "arn:aws:iam::", Ref: "AWS::AccountId", ":user/", Ref: "pz1IamUserName" ] ]
+                 Condition:
+                    StringLike:
+                       'aws:userid': !Ref pz2USerIDfromCloudTrail
+        ManagedPolicyName: !Join ['', ['Keys-', !Ref rIamUser] ]
+        Roles:
+          - !Ref p0FimGroupName
+    DependsOn: rIamUser
+  rClientIDGwRole:
+    Type: AWS::IAM::Role
+    Condition: DoYouNeedClientID
+    Properties:
+      RoleName: 
+        Fn::Join: [ "",[ "aws_", Ref: "pxClientID" ] ]
+      PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/LZ-IAM-Boundary'  
+      MaxSessionDuration: 36000
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated:
+                - !Sub arn:aws:iam::${AWS::AccountId}:saml-provider/LillyUserAPIGW
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+               "SAML:aud": "https://signin.aws.amazon.com/saml"
+      ManagedPolicyArns:
+        - Fn::Join: [ "", [ "arn:aws:iam::", Ref: "AWS::AccountId", ":policy/", Ref: "p1S3Bucket" ] ]
+    DependsOn: rBucketAccessPolicy    
+  rFimApiGwRole:
+    Type: AWS::IAM::Role
+    Condition: DoYouNeedServiceAccount
+    Properties:
+      RoleName: 
+        Fn::Join: [ "", [ Ref: "p0FimGroupName", "_gw" ] ]
+      PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/LZ-IAM-Boundary'  
+      MaxSessionDuration: 36000
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated:
+                - !Sub arn:aws:iam::${AWS::AccountId}:saml-provider/LillyUserAPIGW
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+               "SAML:aud": "https://signin.aws.amazon.com/saml"
+      ManagedPolicyArns:
+        - Fn::Join: [ "", [ "arn:aws:iam::", Ref: "AWS::AccountId", ":policy/", Ref: "p1S3Bucket" ] ]
+    DependsOn: rBucketAccessPolicy   
+  rRedCciBucketPolicy: 
+    Type: "AWS::S3::BucketPolicy"
+    Condition: DataisRedCci
+    Properties: 
+      Bucket: 
+        !Ref rBucket
+      PolicyDocument: 
+        Statement: 
+          - Sid: SSL Transit
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub "arn:aws:s3:::${p1S3Bucket}/*"
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'False'
+          - Sid: Red
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource:
+              - !Sub "arn:aws:s3:::${p1S3Bucket}/*"
+            Condition:
+              NotIpAddress:
+                aws:SourceIp:                             
+                  - 40.0.0.0/16
+                  - 40.248.0.0/13
+                  - 40.44.10.192/26
+                  - 40.44.11.192/26
+  rAccessLogsBucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Condition: DoYouNeedS3AccessLogs
+    Properties:
+      BucketName: !Join ['', ['axlg-', !Ref p1S3Bucket]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: Delete Current Versions
+          Status: Enabled
+          Prefix: ''
+          NoncurrentVersionExpirationInDays: '35'
+      Tags:
+        - Key: Environment
+          Value: !Ref p2Environment
+        - Key: ProjectName
+          Value: !Ref p3ProjectName
+        - Key: ProjectCode
+          Value: !Ref p4ProjectCode
+        - Key: CostCenter
+          Value: !Ref p5CostCenter
+        - Key: CostCenterApprover
+          Value: !Ref p6CostCenterApprover
+        - Key: SystemOwner
+          Value: !Ref p7SystemOwner
+        - Key: SystemCustodian
+          Value: !Ref p8SystemCustodian
+        - Key: PrimaryItContact
+          Value: !Ref p9PrimaryItContact
+        - Key: Level1BusinessArea
+          Value: !Ref p91Level1BusinessArea
+        - Key: DataClassification
+          Value: !Ref p92DataClassification
+        - Key: Hipaa
+          Value: !Ref p93Hipaa
+        - Key: SnowRequestId
+          Value: !Ref p94SnowRequestId
+        - Key: ApplicationCi
+          Value: !Ref p95ApplicationCi
+  
+  rAccessLogsBucketPolicy: 
+    Type: "AWS::S3::BucketPolicy"
+    Condition: DoYouNeedS3AccessLogs
+    Properties: 
+      Bucket: 
+        !Ref rAccessLogsBucket
+      PolicyDocument: 
+        Statement: 
+          - Sid: SSL Transit
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              Fn::Join:
+                - ""
+                -
+                  - "arn:aws:s3:::"
+                  - "axlg-"
+                  - 
+                    Ref: "p1S3Bucket"
+                  - "/*"
+                  - ""
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'False'
+             
