@@ -11,7 +11,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '80'
           ToPort: '80'
-          CidrIp: 40.192.0.0/10
+          CidrIp: 40.192.10.10/10
       Tags:
         - Key: Restricted
           Value: Restricted
