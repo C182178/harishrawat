@@ -6,7 +6,7 @@ Resources:
     Properties:
       GroupDescription: Allow access to on-prem Jump Server
       GroupName: "Test"
-      VpcId: "vpc-f1442589"
+      VpcId: "vpc-06a3d8f2cdafb8a6e"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
