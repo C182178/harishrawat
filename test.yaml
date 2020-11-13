@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create Role for Cost Explorer Read Only Access
+Parameters:
+  pRoleName:
+    Type: String
+    Description: Name of Role to be created as per FIM group name
+    Default: "aws_bu_ids_billing_admins"
+  pPolicyName:
+    Description:  Name of Policy to be created that will be attached to the Role
+    Type: String
+    Default: "Billing-Access-Policy-RO"
+  pSnowRequestId:
+    Type: String
+    Description: Service now Change Cequest ID.
+    Default: "RITM2747997"
+  pSAMLProvider:
+    Type: String
+    Description: Select the SAML Provider
+    Default: LillyUser
+    AllowedValues: 
+      - LillyUser
+      - LillyMgmt
+      - LillyUserAPIGW
+Resources:
+  rBillingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref pRoleName
+      MaxSessionDuration: 36000
+      PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/LZ-Billing-Boundary
+      Path: /
+      Tags:
+        - Key: Restricted
+          Value: True
+        - Key: SNOW Request
+          Value: !Ref pSnowRequestId
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated:
+                - !Sub arn:aws:iam::${AWS::AccountId}:saml-provider/${pSAMLProvider}
+            Action: sts:AssumeRoleWithSAML
+            Condition:
+              StringEquals:
+                "SAML:aud": "https://signin.aws.amazon.com/saml"
+
+  rIAMPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties: 
+        PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - aws-portal:*Usage
+              - aws-portal:ViewBilling
+              - aws-portal:ViewAccount
+              - awsbillingconsole:*Usage
+              - ce:Get*
+              Resource: "*"
+        ManagedPolicyName:  !Ref pPolicyName
+        Roles:
+          - !Ref rBillingRole
+    DependsOn: rBillingRole
