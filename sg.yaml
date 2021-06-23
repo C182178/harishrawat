@@ -9,15 +9,13 @@ Resources:
       VpcId: "vpc-0d92ee4f2a442ecf4"
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
+          FromPort: '225'
+          ToPort: '225'
           CidrIp: 40.3.136.116/32
         - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
+          FromPort: '225'
+          ToPort: '225'
           CidrIp: 40.1.228.100/32
       Tags:
         - Key: Name
           Value: aws-OnPrem-Jumpbox-SSH-Access
-        - Key: Restricted
-          Value: Restricted
