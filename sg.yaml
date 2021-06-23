@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: SG Create
+Resources:
+  rSecurityGroupEIPTeam:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow Network Traffic from on-prem Jump Servers '
+      GroupName: aws-OnPrem-Jumpbox-SSH-Access
+      VpcId: "vpc-0d92ee4f2a442ecf4"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 40.3.136.116/32
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 40.1.228.100/32
+      Tags:
+        - Key: Name
+          Value: aws-OnPrem-Jumpbox-SSH-Access
+        - Key: Restricted
+          Value: Restricted
