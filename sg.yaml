@@ -9,12 +9,12 @@ Resources:
       VpcId: "vpc-0d92ee4f2a442ecf4"
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '225'
-          ToPort: '225'
+          FromPort: '2250'
+          ToPort: '2250'
           CidrIp: 40.3.136.116/32
         - IpProtocol: tcp
-          FromPort: '225'
-          ToPort: '225'
+          FromPort: '2250'
+          ToPort: '2250'
           CidrIp: 40.1.228.100/32
       Tags:
         - Key: Name
